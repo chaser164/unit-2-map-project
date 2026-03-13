@@ -426,7 +426,7 @@
           if (index === 18) {
             startWipe();
           } else {
-            endWipe(); // clean up wipe if we skipped past it
+            if (wipeActive) endWipe(direction); // clean up wipe if we skipped past it
             document.getElementById("wipeContainer").classList.remove("active");
             document.getElementById("scrollyPhoto").style.visibility = "";
             document.getElementById("scrollyPhoto").src = mapImages[index];
