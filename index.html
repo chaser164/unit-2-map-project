@@ -374,6 +374,8 @@
         "finale-1.png", "finale-2.png"
       ];
 
+      mapImages.filter(Boolean).forEach(src => { const i = new Image(); i.src = src; });
+
       const scrollyPhoto = document.getElementById("scrollyPhoto");
       const wipeContainer = document.getElementById("wipeContainer");
       const wipeTop = document.querySelector("#wipeContainer .wipe-top");
