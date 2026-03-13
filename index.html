@@ -1,0 +1,463 @@
+<!-- New Haven parking scrollytelling — based on Yale Scrollama template (Jonathan Soma / Aaron Reiss) -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The School of Hard Parks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      }
+
+      .modal-content {
+        background: #1e1e1e;
+        color: #f0f0f0;
+        padding: 2rem;
+        max-width: 400px;
+        border-radius: 8px;
+        text-align: center;
+        font-family: 'Space Mono', 'Courier New', monospace;
+        font-size: 14px;
+      }
+
+      .modal button {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: 'Space Mono', 'Courier New', monospace;
+        color: #f0f0f0;
+        background: #2b2b2b;
+      }
+
+      h1 {
+        max-width: 42rem;
+        margin: 4rem auto 1rem auto;
+        font-size: 2rem;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        max-width: 42rem;
+        margin: 0 auto 4rem auto;
+        font-size: 1.1rem;
+        color: #aaa;
+      }
+
+      p {
+        max-width: 50%;
+        margin: 0 auto 2rem auto;
+        font-size: 19px;
+        line-height: 1.6;
+      }
+
+      #scrolly {
+        position: relative;
+        padding: 1rem;
+      }
+
+      .scrolly-overlay {
+        position: relative;
+        padding: 0;
+        max-width: 42rem;
+        margin-left: 2px;
+        margin-right: auto;
+      }
+
+      .sticky-thing {
+        position: -webkit-sticky;
+        position: sticky;
+        left: 0;
+        width: 100%;
+        margin: 0;
+        z-index: 0;
+        top: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .step {
+        margin: 0 auto 2rem auto;
+        margin-bottom: 25rem;
+        background: transparent;
+        color: #f0f0f0;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+      }
+
+      .step.rapid {
+        margin-bottom: 4rem;
+        min-height: 40vh;
+      }
+
+      .step .step-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #888;
+        padding: 0.6rem 1rem 0;
+      }
+
+
+      .step p {
+        margin: 0;
+        padding: 1rem 1rem 1.25rem;
+        font-size: 1.2rem;
+        max-width: 100%;
+      }
+
+      #stepWipe {
+        min-height: 60vh;
+      }
+
+      .step .annotation {
+        font-size: 0.95rem;
+        font-style: italic;
+        color: #aaa;
+        padding: 0 1rem 1rem;
+      }
+
+      #zoomBox {
+        position: relative;
+        overflow: clip;
+        margin-left: 100px !important;
+        max-width: 50vw !important;
+        max-height: none !important;
+      }
+
+      #wipeContainer {
+        display: none;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      #wipeContainer.active {
+        display: block;
+      }
+
+      #wipeContainer .wipe-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center;
+      }
+
+      #wipeContainer .wipe-top {
+        z-index: 2;
+        clip-path: inset(0 0 0 0%);
+      }
+
+      #wipeContainer .wipe-bottom {
+        z-index: 1;
+      }
+
+      .photoDiv {
+        width: 100%;
+        margin-right: 0;
+        margin-left: auto;
+        display: block;
+        transition: margin 1.5s 0s, transform 0s;
+        transform-origin: 17% 33%;
+      }
+
+      @media only screen and (min-width: 700px) {
+        #scrolly.side-by-side {
+          display: flex;
+        }
+
+        #scrolly.side-by-side > div {
+          flex-basis: 0;
+          flex-grow: 1;
+          flex-shrink: 1;
+          padding: 0.75em;
+        }
+
+        #scrolly.side-by-side .scrolly-overlay {
+          margin-top: 70vh;
+          order: 0;
+          min-width: 18rem;
+          max-width: 28rem;
+        }
+
+        #scrolly.side-by-side .sticky-thing {
+          order: 1;
+          flex-grow: 2;
+        }
+      }
+    </style>
+    <script src="https://unpkg.com/intersection-observer@0.5.1/intersection-observer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/scrollama/3.0.4/scrollama.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.3.0/d3.min.js"></script>
+  </head>
+
+  <body>
+    <h1>The School of Hard Parks</h1>
+    <p class="subtitle">Chase Reynders</p>
+    <section id="scrolly" class="side-by-side">
+      <div class="sticky-thing">
+        <div id="zoomBox">
+          <img id="scrollyPhoto" class="photoDiv" src="basemap.png" alt="New Haven map">
+          <div id="wipeContainer">
+            <img class="wipe-img wipe-bottom" src="spot-angels-1.png" alt="">
+            <img class="wipe-img wipe-top" src="garage-7.png" alt="">
+          </div>
+        </div>
+      </div>
+
+      <div class="scrolly-overlay">
+        <div class="step" id="step0">
+          <p>As a novice <strong>New Haven</strong> navigator, I was overwhelmed with how to make sense of it.</p>
+          <p>With so many twisting streets and an endless sea of parking rules and regulations, I was in over my head. Where could I find a new home for my dad's car? Where could the mini safely rest for an extended period of time?</p>
+        </div>
+        <div class="step" id="step1">
+          <p>I began foolishly, as one does. My search for the car's resting place was limited to ~25 parking garages.</p>
+        </div>
+        <div class="step" id="step2">
+          <p>The decision process was simple: was the garage <span style="color:green; font-weight:bold;">near</span>, <span style="color:goldenrod; font-weight:bold;">walkable</span>, or <span style="color:red; font-weight:bold;">far</span>?</p>
+        </div>
+        <div class="step" id="step3">
+          <p>And so it was all too easy to settle on the <strong>Crown Street Garage</strong>, a conveniently close location offering monthly parking passes. From my limited parking-world view, it seemed like a necessary cost!</p>
+        </div>
+        <div class="step" id="step4">
+          <p>That said, I didn't love it. So the search continued as the mini sat in the shade of Crown Street Garage for a month or so.</p>
+        </div>
+        <div class="step" id="step5">
+          <p>My next realization: the world of off-campus friends as instruments of personal parking gains. When I discovered Kennedy's driveway, it was as if I had struck gold.</p>
+        </div>
+        <div class="step" id="step6">
+          <p>I drooled at the thought of my dad's car sitting indefinitly in a nearby driveway FOR FREE!</p>
+          <!-- <p class="annotation">(an expensive rookie mistake)</p> -->
+        </div>
+        <!-- <div class="step" id="step7">
+          <p></p>
+        </div> -->
+        <div class="step" id="step8">
+          <p>There was one catch (as there always is): Kennedy has a car, too. As I was the guest-parker, I was responsible for nosing further into the driveway. He gave me a spare key to take care of car-shuffling...but at least it was still free...right?</p>
+        </div>
+        <div class="step" id="step9">
+          <p>I suppose free in one sense...</p>
+        </div>
+        <div class="step" id="step10">
+          <p>...but after you play car tetris for the 4th time in one week...</p>
+        </div>
+        <div class="step" id="step11">
+          <p>...you start to lose some sanity...</p>
+        </div>
+        <div class="step" id="step12">
+          <p>...and when you narrowly avoid dinging your friend's 15-year-old mini-van that drives like a boat...</p>
+        </div>
+        <div class="step" id="step13">
+          <p>...you start to wonder:</p>
+        </div>
+        <div class="step" id="step14">
+          <p>Is this really free? Or are we trading one cost for another?</p>
+        </div>
+        <div class="step" id="step15">
+          <p>I found myself daydreaming of Crown Street Garage's endless in-and-out privileges...</p>
+        </div>
+        <div class="step" id="step16">
+          <p>At least we can rest easy knowing <italics>Park New Haven</italics> won't be sending us any invoices this month ... right?</p>
+        </div>
+        <div class="step" id="step17">
+          <p></p>
+        </div>
+        <div class="step" id="stepGarage7">
+          <p>By this point, my 2-month cumulative parking knowledge was limited to ~26 discrete locations. It was time to level up...</p>
+        </div>
+        <div class="step" id="stepWipe">
+          <p>...with help from a <strong>blessing from above</strong></p>
+        </div>
+        <div class="step" id="step18">
+          <p>Introducing <strong>Spot Angels</strong>: a community-driven mapping app where users can report <span style="color:green;font-weight:bold;">free</span> and <span style="color:blue;font-weight:bold;">paid</span> street parking options. </p>
+        </div>
+        <div class="step" id="step19">
+          <p>App users can click on each street annotation to understand their respective rules of the road.</p>
+        </div>
+        <div class="step" id="step20">
+          <p>And these annotations are updated in real-time by the community! As I dove into the platform, I noticed some especially active angels on the scene who were responsible for shedding light on much of the city's parking rules.</p>
+        </div>
+        <div class="step" id="step21">
+          <p>I was an especially big fan of Angel75805808...</p>
+        </div>
+        <div class="step" id="step22">
+          <p>...since they ended up blessing me with the knowledge of parking on Edgewood Avenue, across from Rainbow Park. It was here that I found an INFINITE PARKING GLITCH: totally free and unlimited parking allowed between November and April!!!</p>
+        </div>
+        <div class="step" id="step23">
+          <p>I found a cozy little infinite parking spot under a tree, and it was here the mini rested through the end of junior spring and into senior fall.</p>
+        </div>
+        <div class="step" id="stepFillup1">
+          <p>But as our parking saga has taught us, there is no free lunch. One fateful weekend while I was away, Angel75805808 decided to perform a whole bunch of divine interventions.</p>
+        </div>
+        <div class="step rapid" id="stepFillup2"></div>
+        <div class="step rapid" id="stepFillup3"></div>
+        <div class="step rapid" id="stepFillup4"></div>
+        <div class="step rapid" id="stepFillup5"></div>
+        <div class="step rapid" id="stepFillup6"></div>
+        <div class="step rapid" id="stepFillup7"></div>
+        <div class="step rapid" id="stepFillup8"></div>
+        <div class="step rapid" id="stepFillup9"></div>
+        <div class="step rapid" id="stepFillup10"></div>
+        <div class="step rapid" id="stepFillup11"></div>
+        <div class="step rapid" id="stepFillup12"></div>
+        <div class="step" id="stepFillupEnd">
+          <p>My infinite spot had been compromised!</p>
+        </div>
+        <div class="step" id="stepAngels7">
+          <p>I spent <strong>30 minutes</strong> circling that block, shocked and dismayed as to how my precious parking glitch had been overtaken.</p>
+        </div>
+        <div class="step" id="stepAngels8">
+          <p>Eventually (and at the expense of Psychology class attendance), I was able to catch a car in transition and squeeze in thanks to my Bostonian parallel parking skills (please excuse my flex).</p>
+        </div>
+        <div class="step" id="stepAngels8b">
+          <p>But what now? The mental load of street parking had just been raised by all the sudden Edgewood popularity, and with an impending mega-snow-storm on the way, I was once again in over my head.</p>
+        </div>
+        <div class="step rapid" id="stepZoomPre"></div>
+        <div class="step" id="stepZoomOut">
+          <p>I went back to the <strong>Spot Angels</strong> drawing board, but nothing made sense with an impending parking ban...</p>
+        </div>
+        <div class="step" id="stepFinale1">
+          <p>...it was around this moment that I harkened back to my humble beginnings.</p>
+        </div>
+        <div class="step" id="stepFinale2">
+          <p>In a time of immense Edgewood affinity, a once-in-a-decade blizzard, and too many finals to focus on car tetris, I reached back into the well of experience to find the right solution. Sometimes, the simplest tool is the best one for the job. Truly elite parking knowledge is knowing that life is not about finding free parking at the expense of your sanity – it's knowing when to spend money so that finding a spot doesn't <span style="color:red;">consume your world</span>.</p>
+        </div>
+      </div>
+    </section>
+
+    <div id="deviceModal" class="modal">
+      <div class="modal-content">
+        <span>
+          This piece is best viewed on a laptop or desktop. On a phone or tablet the layout may not look as intended.
+        </span>
+        <button id="continueBtn">Continue Anyway</button>
+      </div>
+    </div>
+
+    <script>
+      const mapImages = [
+        "basemap.png",
+        "garage-1.png", "garage-2.png", "garage-3.png", "garage-4.png", "garage-5.png", "garage-6.png",
+        "friend-0.png", "friend-1.png", "friend-2.png", "friend-3.png", "friend-4.png", "friend-5.png", "friend-6.png", "friend-7.png", "friend-8.png",
+        "friend-9.png",   // index 16 — restored
+        "garage-7.png",   // index 17 — new garage-7 step
+        null,             // index 18 = wipe step (garage-7 → spot-angels-1)
+        "spot-angels-1.png", "spot-angels-2.png", "spot-angels-3.png", "spot-angels-4.png", "spot-angels-5.png", "spot-angels-6.png",
+        "fill-up-sequence-0.png", "fill-up-sequence-1.png", "fill-up-sequence-2.png", "fill-up-sequence-3.png",
+        "fill-up-sequence-4.png", "fill-up-sequence-5.png", "fill-up-sequence-6.png", "fill-up-sequence-7.png",
+        "fill-up-sequence-8.png", "fill-up-sequence-9.png", "fill-up-sequence-10.png", "fill-up-sequence-11.png",
+        "fill-up-sequence-12.png", "spot-angels-7.png", "spot-angels-8.png", "spot-angels-8.png",
+        "spot-angels-1.png", "spot-angels-1.png",  // indices 41-42: zoom-out pair
+        "finale-1.png", "finale-2.png"
+      ];
+
+      const scrollyPhoto = document.getElementById("scrollyPhoto");
+      const wipeContainer = document.getElementById("wipeContainer");
+      const wipeTop = document.querySelector("#wipeContainer .wipe-top");
+      const wipeStep = document.getElementById("stepWipe");
+      let wipeActive = false;
+      let wipeScrollListener = null;
+
+      function updateWipeProgress() {
+        if (!wipeActive || !wipeStep || !wipeTop) return;
+        const rect = wipeStep.getBoundingClientRect();
+        const progress = 1 - (rect.bottom - window.innerHeight * 0.5) / (rect.height || 1);
+        const pct = Math.max(0, Math.min(1, progress)) * 100;
+        wipeTop.style.clipPath = "inset(0 0 0 " + pct + "%)";
+      }
+
+      function startWipe() {
+        wipeActive = true;
+        scrollyPhoto.style.visibility = "hidden";
+        wipeContainer.classList.add("active");
+        updateWipeProgress();
+        wipeScrollListener = function () {
+          updateWipeProgress();
+        };
+        window.addEventListener("scroll", wipeScrollListener, { passive: true });
+        requestAnimationFrame(updateWipeProgress);
+      }
+
+      function endWipe(direction) {
+        wipeActive = false;
+        if (wipeScrollListener) {
+          window.removeEventListener("scroll", wipeScrollListener);
+          wipeScrollListener = null;
+        }
+        wipeContainer.classList.remove("active");
+        scrollyPhoto.style.visibility = "";
+        scrollyPhoto.src = direction === "up" ? "garage-7.png" : "spot-angels-1.png";
+        if (wipeTop) wipeTop.style.clipPath = "inset(0 0 0 0%)";
+      }
+    </script>
+
+    <script>
+      const scroller = scrollama();
+      scroller
+        .setup({
+          step: "#scrolly .scrolly-overlay .step",
+          offset: 0.5,
+          debug: false
+        })
+        .onStepEnter(function ({ element, index, direction }) {
+          if (index === 18) {
+            startWipe();
+          } else {
+            endWipe(); // clean up wipe if we skipped past it
+            document.getElementById("wipeContainer").classList.remove("active");
+            document.getElementById("scrollyPhoto").style.visibility = "";
+            document.getElementById("scrollyPhoto").src = mapImages[index];
+          }
+          // Zoom-in pair: step22/spot-angels-5 (index 23), animates with step21 (index 22).
+          // Zoom-out pair: stepZoomPre (index 42) zoomed, stepZoomOut (index 43) unzoomed, animates between them.
+          const fromIndex = direction === "down" ? index - 1 : index + 1;
+          const animateZoom = (index === 23 && fromIndex === 22) || (index === 22 && fromIndex === 23)
+                           || (index === 41 && fromIndex === 42) || (index === 42 && fromIndex === 41);
+          const wantZoom = index === 23 || index === 41;
+          scrollyPhoto.style.transition = animateZoom
+            ? "margin 1.5s 0s, transform 0.8s ease"
+            : "margin 1.5s 0s, transform 0s";
+          scrollyPhoto.style.transform = wantZoom ? "scale(6)" : "";
+        })
+        .onStepExit(function ({ element, index, direction }) {
+          if (index === 18) endWipe(direction);
+        });
+
+      window.addEventListener("resize", scroller.resize);
+    </script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.innerWidth <= 900) {
+          document.getElementById("deviceModal").style.display = "flex";
+        }
+        document.getElementById("continueBtn").addEventListener("click", function () {
+          document.getElementById("deviceModal").style.display = "none";
+        });
+      });
+    </script>
+  </body>
+</html>
